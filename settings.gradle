@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name='CSC372_mikeskwierawski_a3'
