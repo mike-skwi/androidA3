@@ -3,6 +3,7 @@ package com.example.csc372_mikeskwierawski_a3;
 import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,6 +15,8 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import static android.widget.Toast.LENGTH_SHORT;
 
 public class NameDownloaderAsyncTask extends AsyncTask<ArrayList<Stock>,Integer,String> {
     private static HashMap<String,String> symName;
@@ -38,6 +41,7 @@ public class NameDownloaderAsyncTask extends AsyncTask<ArrayList<Stock>,Integer,
         if (result.isEmpty()){
             result.add("Stock not found.");
         }
+        Toast.makeText(this.mainActivity,symbol, LENGTH_SHORT).show();
         return result;
     }
 
@@ -76,13 +80,14 @@ public class NameDownloaderAsyncTask extends AsyncTask<ArrayList<Stock>,Integer,
         return null;
     }
 
-//    @Override
-//    protected void onPostExecute(String str){
+    @Override
+    protected void onPostExecute(String str){
 //        parseJSON(str);
-//        for(int i = 0; i<stockList.size();i++){
-//            new StockDownloaderAsyncTask(mainActivity).execute(stockList.get(i).getStockSymbol());
-//        }
-//    }
+        for(int i = 0; i<stockList.size();i++){
+
+            new StockDownloaderAsyncTask(mainActivity).execute(stockList.get(i).getStockSymbol());
+        }
+    }
 
 //    protected void parseJSON(String str){
 //        symName.clear();

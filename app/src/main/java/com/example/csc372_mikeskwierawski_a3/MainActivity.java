@@ -1,10 +1,16 @@
 package com.example.csc372_mikeskwierawski_a3;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -19,10 +25,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static android.widget.Toast.LENGTH_SHORT;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,8 +39,9 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Stock> stockArrayList = new ArrayList<>();
     private RecyclerView recyclerView;
     private StockListAdapter stockListAdapter;
-    private NameDownloaderAsyncTask ndat;
-
+    public NameDownloaderAsyncTask ndat = new NameDownloaderAsyncTask(MainActivity.this);
+//  new NameDownloaderAsyncTask(this).execute(doRead());
+    private String m_Text = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,11 +56,7 @@ public class MainActivity extends AppCompatActivity {
             //TODO network error dialog shit
         }
         else{
-            if (stockArrayList.size() == 0){
-                doWrite(this);
-            }
-
-            new NameDownloaderAsyncTask(this).execute(doRead());
+                doRead();
         }
         recyclerView = findViewById(R.id.recyclerView);
         stockListAdapter = new StockListAdapter(stockArrayList,this);
@@ -75,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void stockResult(Stock stock) {
         if (stock == null){
-            Toast.makeText(this,"Error",Toast.LENGTH_SHORT).show();
+            Toast.makeText(this,"Error", LENGTH_SHORT).show();
             return;
         }
         //TODO write to json
@@ -106,16 +112,13 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     JSONArray jsonArray = new JSONArray(jsonText);
                     Log.d(TAG, "doRead: " + jsonArray.length());
-
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject jsonObject = jsonArray.getJSONObject(i);
-
                         String symbol = jsonObject.getString("symbol");
                         String companyName = jsonObject.getString("companyName");
                         Double price = jsonObject.getDouble("latestPrice");
                         Double priceChange = jsonObject.getDouble("change");
                         Double changePercentage = jsonObject.getDouble("changePercent");
-
                         Stock n = new Stock(symbol, companyName, price, priceChange, changePercentage);
                         stockArrayList.add(n);
                     }
@@ -128,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
         }
         catch (FileNotFoundException e) {
             Log.d(TAG, "doRead: File not found: \" + e.toString()");
+            doWrite(this);
+
         } catch (IOException e) {
             Log.d(TAG, "doRead: Can not read file: " + e.toString());
         }
@@ -166,6 +171,49 @@ public class MainActivity extends AppCompatActivity {
         catch (IOException e) {
         }
     }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        MenuInflater inf = getMenuInflater();
+        inf.inflate(R.menu.menu,menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch (item.getItemId()){
+            case R.id.addButton:
+                Toast.makeText(this,"ayyy",LENGTH_SHORT).show();
+                //TODO add what happens when you press the add button
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Stock Selection");
+                builder.setMessage("Please enter a Stock Symbol");
+                // Set up the input
+                final EditText input = new EditText(this);
+                input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                builder.setView(input);
+                builder.setPositiveButton("Search", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        m_Text = input.getText().toString();
+//                        stockArrayList = ndat.addStockToList(m_Text);
+                        ndat.execute(stockArrayList);
+//                        new NameDownloaderAsyncTask(MainActivity.this).execute(stockArrayList);
+                    }
+                });
+
+                builder.setNegativeButton("Return", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+
+                builder.show();
+
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
 
 
     public void addStock(Stock stock) {
