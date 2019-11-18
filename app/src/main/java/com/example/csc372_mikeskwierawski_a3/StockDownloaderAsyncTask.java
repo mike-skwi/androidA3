@@ -18,7 +18,7 @@ import java.net.URL;
 import java.util.ArrayList;
 
 public class StockDownloaderAsyncTask extends AsyncTask<String, Void, String> {
-    private boolean status;
+    private boolean status = true;
     private static final String API_SECRET = "quote?token=sk_5093c1b39d324d89b996f353b11d471d";
     public String nameURLApi = "https://cloud.iexapis.com/stable/stock";
     private JSONArray stockReturnedResults = new JSONArray();
@@ -32,8 +32,14 @@ public class StockDownloaderAsyncTask extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String str){
         ArrayList<Stock> dataList = new ArrayList<>();
+        String jsonWithBrackets = "[" + str + "]";
         try{
-            JSONArray jsonArray = new JSONArray(str);
+//            JSONObject jObj = new JSONObject(str)
+//            JSONArray jsonArray = jObj.getJSONArray("symbol");
+
+            JSONArray jsonArray = new JSONArray(jsonWithBrackets);
+
+
             for (int i = 0; i < jsonArray.length(); i++){
                 JSONObject jsonObject = jsonArray.getJSONObject(i);
                 String sym = jsonObject.getString("symbol");
@@ -48,13 +54,14 @@ public class StockDownloaderAsyncTask extends AsyncTask<String, Void, String> {
                     price = 0.0;
                 }
                 if (!jsonObject.isNull("change")) {
-                    price = jsonObject.getDouble("change");
+                    changePoint = jsonObject.getDouble("change");
                 }
                 else{
                     changePoint = 0.0;
                 }
+                //TODO here do stock.positive true or false
                 if (!jsonObject.isNull("changePercent")) {
-                    price = jsonObject.getDouble("changePercent");
+                    changePercent = jsonObject.getDouble("changePercent");
                 }
                 else{
                     changePercent = 0.0;
@@ -67,12 +74,28 @@ public class StockDownloaderAsyncTask extends AsyncTask<String, Void, String> {
         }
 
         if (status == true){
-            mainActivity.stockResult(dataList.get(0));
+//            mainActivity.stockResult(dataList.get(0));
+                if (!mainActivity.stockArrayList.contains(dataList.get(0))){
+//                    mainActivity.updateStockArrayList(dataList.get(0));
+                    try {
+                        mainActivity.addStockToArrayList(dataList.get(0));
+                        mainActivity.saveStocksIntoJson();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{
+                    //TODO toast saying duplicated stock??
+                }
+//                mainActivity.clearStockList();
         }
         else{
-            mainActivity.addStock(dataList.get(0));
+//            Toast.makeText(mainActivity.this,"ahh",Toast.LENGTH_SHORT);
+//            mainActivity.addStock(dataList.get(0));
+//            mainActivity.updateStockArrayList(dataList.get(0));
         }
-
     }
 
     @Override
@@ -94,7 +117,7 @@ public class StockDownloaderAsyncTask extends AsyncTask<String, Void, String> {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                 String line;
                 while((line = reader.readLine()) != null){
-                    sb.append('\n');
+                    sb.append(line).append('\n');
                 }
             } catch (MalformedURLException e) {
                 e.printStackTrace();

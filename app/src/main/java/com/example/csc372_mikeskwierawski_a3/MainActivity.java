@@ -19,17 +19,21 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import static android.widget.Toast.LENGTH_SHORT;
 
@@ -37,32 +41,42 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     ArrayList<Stock> stockArrayList = new ArrayList<>();
+    private Set<String> stockHashSet = new HashSet<>();
     private RecyclerView recyclerView;
     private StockListAdapter stockListAdapter;
-    public NameDownloaderAsyncTask ndat = new NameDownloaderAsyncTask(MainActivity.this);
-//  new NameDownloaderAsyncTask(this).execute(doRead());
     private String m_Text = "";
+    private EditText input;
+    private SwipeRefreshLayout srl;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Stock Watch");
-
-        if (!networkCheck()){
-//            networkError("AH");
-            //TODO network error dialog shit
-        }
-        else{
-                doRead();
-        }
+        clearStockList();
         recyclerView = findViewById(R.id.recyclerView);
         stockListAdapter = new StockListAdapter(stockArrayList,this);
         recyclerView.setAdapter(stockListAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Stock Watch");
+        srl = findViewById(R.id.sr);
+        srl.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                doSwipeRefresh();
+            }
+        });
+        if (!networkCheck()){
+//            networkError("AH");
+            //TODO network error dialog shit
+        }
+        else {
+            doRead();
+            new NameDownloaderAsyncTask(MainActivity.this).execute();
+        }
+        clearStockList();
     }
 
     private boolean networkCheck(){
@@ -78,6 +92,55 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
     }
+
+    private void doSwipeRefresh() {
+        networkCheck();
+        if (!networkCheck()) {
+            //TODO no network
+            srl.setRefreshing(false);
+            return;
+        }
+        for (Stock s : stockArrayList) {
+            //TODO run a method that runs the stockdownloader async task
+            getStockData(s.getStockSymbol());
+        }
+        stockListAdapter.notifyDataSetChanged();
+        srl.setRefreshing(false);
+        Toast.makeText(this, "Stocks have been updated", Toast.LENGTH_SHORT).show();
+    }
+
+//    private void getStockData(String symbol, String name) {
+//        Stock st = new Stock(symbol, name,null,null,null);
+//        updateStockArrayList(st);
+//    }
+
+//    public void updateStockArrayList(Stock s) {
+//        if (!stockHashSet.contains(s.getStockSymbol())) {
+//            stockArrayList.add(s);
+//            stockHashSet.add(s.getStockSymbol());
+//        } else {
+//            int i = stockArrayList.indexOf(s);
+//            stockArrayList.set(i, s);
+//        }
+//        updateList();
+//
+//    }
+
+//    private void updateList() {
+//        stockArrayList.sort(new Comparator<Stock>() {
+//            @Override
+//            public int compare(Stock a, Stock b) {
+//                return a.getStockSymbol().compareTo(b.getStockSymbol());
+//            }
+//        });
+//        stockListAdapter.notifyDataSetChanged();
+//        try {
+//            saveStocksIntoJson();
+//        } catch (IOException | JSONException e) {
+//            Toast.makeText(this, "Not saved", Toast.LENGTH_SHORT).show();
+//        }
+//
+//    }
 
     public void stockResult(Stock stock) {
         if (stock == null){
@@ -139,7 +202,30 @@ public class MainActivity extends AppCompatActivity {
         return stockArrayList;
     }
 
-    public void doWrite(Context t){
+    private void getStockData(String symbol) {
+        new StockDownloaderAsyncTask(MainActivity.this).execute(symbol);
+    }
+
+
+
+    public void saveStocksIntoJson() throws IOException, JSONException {
+        FileOutputStream fos = getApplicationContext().openFileOutput("SavedStocks.json", Context.MODE_PRIVATE);
+        JSONArray jsonArray = new JSONArray();
+        for (Stock s : stockArrayList) {
+            JSONObject stockJSON = new JSONObject();
+            stockJSON.put("symbol", s.getStockSymbol());
+            stockJSON.put("name", s.getCompanyName());
+            jsonArray.put(stockJSON);
+        }
+        String jsonText = jsonArray.toString();
+        fos.write(jsonText.getBytes());
+        fos.close();
+
+
+
+    }
+
+    public void doWrite(Context ma){
         JSONArray jsonArray = new JSONArray();
         for (Stock ind : stockArrayList){
             try{
@@ -188,16 +274,18 @@ public class MainActivity extends AppCompatActivity {
                 builder.setTitle("Stock Selection");
                 builder.setMessage("Please enter a Stock Symbol");
                 // Set up the input
-                final EditText input = new EditText(this);
-                input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                input = new EditText(this);
+                input.setInputType(InputType.TYPE_CLASS_TEXT);
+                input.setSingleLine();
                 builder.setView(input);
                 builder.setPositiveButton("Search", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         m_Text = input.getText().toString();
+                        getStockData(m_Text);
 //                        stockArrayList = ndat.addStockToList(m_Text);
-                        ndat.execute(stockArrayList);
-//                        new NameDownloaderAsyncTask(MainActivity.this).execute(stockArrayList);
+//                        ndat.execute(stockArrayList);
+//                        new NameDownloaderAsyncTask(MainActivity.this).execute();
                     }
                 });
 
@@ -207,20 +295,23 @@ public class MainActivity extends AppCompatActivity {
                         dialog.cancel();
                     }
                 });
-
                 builder.show();
-
         }
         return super.onOptionsItemSelected(item);
     }
 
+    public void clearStockList(){
+        stockArrayList.clear();
+        stockListAdapter.notifyDataSetChanged();
+    }
 
-
-    public void addStock(Stock stock) {
+    public void addStockToArrayList(Stock stock) {
         // call async stock downloader
         if(networkCheck() != false) {
-//            new NameDownloaderAsyncTask(this)
-            new StockDownloaderAsyncTask(this).execute(stock.getStockSymbol());
+            stockArrayList.add(stock);
+            stockListAdapter.notifyDataSetChanged();
+//            updateStockArrayList(stock);
+
             //TODO check to make sure that this isnt a duplicated stock
         }
         else{

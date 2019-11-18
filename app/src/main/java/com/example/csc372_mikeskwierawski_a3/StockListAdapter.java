@@ -44,9 +44,15 @@ public class StockListAdapter extends RecyclerView.Adapter<ViewHolder>{
             holder.fullSymbolName.setText(selectedNote.getCompanyName());
             holder.smymbAbbreviation.setText(selectedNote.getStockSymbol());
             //TODO make a conditional for the arrow
-            holder.arrow.setText("^");
+            holder.arrow.setText("A");
             holder.stockPrice.setText(selectedNote.getPriceString());
             holder.stockChange.setText(selectedNote.getChangeString());
+
+            holder.fullSymbolName.setTextColor(Color.parseColor("#23C72D"));
+            holder.smymbAbbreviation.setTextColor(Color.parseColor("#23C72D"));
+            holder.arrow.setTextColor(Color.parseColor("#23C72D"));
+            holder.stockPrice.setTextColor(Color.parseColor("#23C72D"));
+            holder.stockChange.setTextColor(Color.parseColor("#23C72D"));
 
         }
         else{
@@ -72,5 +78,16 @@ public class StockListAdapter extends RecyclerView.Adapter<ViewHolder>{
     public int getItemCount() {
         return stockList.size();
     }
+
+//    @Override
+//    public long getItemId(int position) {
+//        return position;
+//    }
+//
+//    @Override
+//    public int getItemViewType(int position) {
+//        return position;
+//    }
+
 
 }
