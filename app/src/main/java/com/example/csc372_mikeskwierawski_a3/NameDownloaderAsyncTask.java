@@ -3,7 +3,6 @@ package com.example.csc372_mikeskwierawski_a3;
 import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.util.Log;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -16,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import static android.widget.Toast.LENGTH_SHORT;
 
@@ -60,8 +60,7 @@ public class NameDownloaderAsyncTask extends AsyncTask<String,Integer,String> {
             String line;
             while((line = reader.readLine()) != null) {
                 sb.append(line).append('\n');
-                Log.d("AAA","Does it get here");
-
+//                Log.d("AAA","Does it get here");
             }
         } catch (Exception e) {
             return null;
@@ -69,6 +68,15 @@ public class NameDownloaderAsyncTask extends AsyncTask<String,Integer,String> {
         return sb.toString();
     }
 
+    public static Map<String, String> mapLookUp(String s) {
+        Map<String, String> likeMap = new HashMap<>();
+        for(String key: symName.keySet()) {
+            if(key.contains(s)) {
+                likeMap.put(key, symName.get(key));
+            }
+        }
+        return likeMap;
+    }
 
 
 //    @Override

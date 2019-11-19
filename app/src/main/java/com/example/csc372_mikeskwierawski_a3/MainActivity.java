@@ -2,8 +2,10 @@ package com.example.csc372_mikeskwierawski_a3;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
@@ -26,7 +28,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import androidx.appcompat.app.AlertDialog;
@@ -38,7 +42,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import static android.widget.Toast.LENGTH_SHORT;
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, View.OnLongClickListener {
 
     private static final String TAG = "MainActivity";
     ArrayList<Stock> stockArrayList = new ArrayList<>();
@@ -48,6 +52,7 @@ public class MainActivity extends AppCompatActivity  {
     private String m_Text = "";
     private EditText input;
     private SwipeRefreshLayout srl;
+    private static final String MARKET_WATCH_LINK = "https://www.marketwatch.com/investing/stock/";
 
 
     @Override
@@ -120,6 +125,54 @@ public class MainActivity extends AppCompatActivity  {
 //        updateStockArrayList(st);
 //    }
 
+    @Override
+    public void onClick(View view) {
+//        Toast.makeText(view.getContext(), "position = " + recyclerView.getChildLayoutPosition(view), Toast.LENGTH_SHORT).show();
+        int positionClicked = recyclerView.getChildLayoutPosition(view);
+        Stock st = stockArrayList.get(positionClicked);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        String stockUrl = MARKET_WATCH_LINK + st.getStockSymbol();
+        intent.setData(Uri.parse(stockUrl));
+        startActivity(intent);
+    }
+
+    @Override
+    public boolean onLongClick(View view) {
+//        Toast.makeText(view.getContext(), "long click. position = " + recyclerView.getChildLayoutPosition(view), Toast.LENGTH_SHORT).show();
+        final int deletePosition = recyclerView.getChildLayoutPosition(view);
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+        builder.setTitle("Delete");
+        builder.setMessage("Are you sure you want to delete this stock?");
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+//                MainActivity.this.deleteFromList(deletePosition);
+                deleteFromList(deletePosition);
+            }
+        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        return true;
+
+
+    }
+
+    private void symNotFoundError(String symbol) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle(symbol + " was not found.");
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     public void updateStockArrayList(Stock s) {
         if (!stockHashSet.contains(s.getStockSymbol())) {
             stockArrayList.add(s);
@@ -135,6 +188,14 @@ public class MainActivity extends AppCompatActivity  {
     }
 
     private void updateList() {
+        stockArrayList.sort(new Comparator<Stock>() {
+            //sort is underlined but still works
+            @Override
+            public int compare(Stock prev, Stock next) {
+                return prev.getStockSymbol().compareTo(next.getStockSymbol());
+            }
+        });
+
         stockListAdapter.notifyDataSetChanged();
         try {
             saveStocksIntoJson();
@@ -210,10 +271,6 @@ public class MainActivity extends AppCompatActivity  {
     }
 
 
-    public void onClick(final View view){
-
-    }
-
 
     public void saveStocksIntoJson() throws IOException, JSONException {
         FileOutputStream fos = getApplicationContext().openFileOutput("SavedStocks.json", Context.MODE_PRIVATE);
@@ -282,7 +339,6 @@ public class MainActivity extends AppCompatActivity  {
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()){
             case R.id.addButton:
-                Toast.makeText(this,"ayyy",LENGTH_SHORT).show();
                 //TODO add what happens when you press the add button
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("Stock Selection");
@@ -295,14 +351,33 @@ public class MainActivity extends AppCompatActivity  {
                 builder.setPositiveButton("Search", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        m_Text = input.getText().toString();
-                        getStockData(m_Text);
+                        m_Text = input.getText().toString().toUpperCase();
+//                        getStockData(m_Text);
 //                        stockArrayList = ndat.addStockToList(m_Text);
 //                        ndat.execute(stockArrayList);
 //                        new NameDownloaderAsyncTask(MainActivity.this).execute();
+                        if (!m_Text.isEmpty()) {
+                            Map<String, String> closelySpelledKeys = NameDownloaderAsyncTask.mapLookUp(m_Text);
+                            if (closelySpelledKeys.size() >= 1) {
+                                if (!stockHashSet.contains(m_Text)) {
+                                    getStockData(m_Text);
+                                } else {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                    builder.setTitle("Duplicate Stock Detected");
+                                    builder.setMessage(m_Text + " is already in the list");
+                                    AlertDialog dialog2 = builder.create();
+                                    dialog2.show();
+                                }
+                            }
+//                            else if (closelySpelledKeys.size() > 1){
+                                // This is where a multi dialog thing would be
+//                            }
+                            else {
+                                Toast.makeText(MainActivity.this,"Couldn't find stock",LENGTH_SHORT).show();
+                            }
+                        }
                     }
                 });
-
                 builder.setNegativeButton("Return", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

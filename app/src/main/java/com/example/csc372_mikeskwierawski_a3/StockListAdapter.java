@@ -32,6 +32,8 @@ public class StockListAdapter extends RecyclerView.Adapter<ViewHolder>{
         //        itemView.setOnClickListener(mainActivity);
 //        itemView.setOnLongClickListener((View.OnLongClickListener) mainActivity);
 
+        itemView.setOnLongClickListener(mainActivity);
+
         return new ViewHolder(itemView);
     }
 
@@ -79,15 +81,6 @@ public class StockListAdapter extends RecyclerView.Adapter<ViewHolder>{
         return stockList.size();
     }
 
-//    @Override
-//    public long getItemId(int position) {
-//        return position;
-//    }
-//
-//    @Override
-//    public int getItemViewType(int position) {
-//        return position;
-//    }
 
 
 }
