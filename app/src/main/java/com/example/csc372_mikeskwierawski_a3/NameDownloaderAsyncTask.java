@@ -142,8 +142,6 @@ public class NameDownloaderAsyncTask extends AsyncTask<String,Integer,String> {
 //            JSONArray jsonArray = new JSONArray(str);
 //            for(int i = 0; i< jsonArray.length();i++){
 //                JSONObject jsonObject = jsonArray.getJSONObject(i);
-//                String sym = jsonObject.getString("symbol");
-//                String company = jsonObject.getString("companyName");
 //                symName.put(sym,company);
 //            }
 //        } catch (JSONException e) {

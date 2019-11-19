@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -37,7 +38,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import static android.widget.Toast.LENGTH_SHORT;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity  {
 
     private static final String TAG = "MainActivity";
     ArrayList<Stock> stockArrayList = new ArrayList<>();
@@ -53,11 +54,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        clearStockList();
+//        clearStockList();
         recyclerView = findViewById(R.id.recyclerView);
         stockListAdapter = new StockListAdapter(stockArrayList,this);
         recyclerView.setAdapter(stockListAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Stock Watch");
@@ -70,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         });
         if (!networkCheck()){
 //            networkError("AH");
-            //TODO network error dialog shit
+            networkErrorDialog();
         }
         else {
             doRead();
@@ -96,13 +98,17 @@ public class MainActivity extends AppCompatActivity {
     private void doSwipeRefresh() {
         networkCheck();
         if (!networkCheck()) {
-            //TODO no network
+
             srl.setRefreshing(false);
+            networkErrorDialog();
             return;
+
         }
-        for (Stock s : stockArrayList) {
-            //TODO run a method that runs the stockdownloader async task
-            getStockData(s.getStockSymbol());
+        if (stockArrayList.size() != 0){
+            for (Stock s : stockArrayList) {
+                //TODO run a method that runs the stockdownloader async task
+                getStockData(s.getStockSymbol());
+            }
         }
         stockListAdapter.notifyDataSetChanged();
         srl.setRefreshing(false);
@@ -114,33 +120,30 @@ public class MainActivity extends AppCompatActivity {
 //        updateStockArrayList(st);
 //    }
 
-//    public void updateStockArrayList(Stock s) {
-//        if (!stockHashSet.contains(s.getStockSymbol())) {
-//            stockArrayList.add(s);
-//            stockHashSet.add(s.getStockSymbol());
-//        } else {
-//            int i = stockArrayList.indexOf(s);
-//            stockArrayList.set(i, s);
-//        }
-//        updateList();
-//
-//    }
+    public void updateStockArrayList(Stock s) {
+        if (!stockHashSet.contains(s.getStockSymbol())) {
+            stockArrayList.add(s);
+            stockHashSet.add(s.getStockSymbol());
+        } else {
+            if (stockArrayList.contains(s)){
+                int i = stockArrayList.indexOf(s);
+                stockArrayList.set(i, s);
+            }
+        }
+        updateList();
 
-//    private void updateList() {
-//        stockArrayList.sort(new Comparator<Stock>() {
-//            @Override
-//            public int compare(Stock a, Stock b) {
-//                return a.getStockSymbol().compareTo(b.getStockSymbol());
-//            }
-//        });
-//        stockListAdapter.notifyDataSetChanged();
-//        try {
-//            saveStocksIntoJson();
-//        } catch (IOException | JSONException e) {
-//            Toast.makeText(this, "Not saved", Toast.LENGTH_SHORT).show();
-//        }
-//
-//    }
+    }
+
+    private void updateList() {
+        stockListAdapter.notifyDataSetChanged();
+        try {
+            saveStocksIntoJson();
+//            clearStockList();
+        } catch (IOException | JSONException e) {
+            Toast.makeText(this, "Not saved", Toast.LENGTH_SHORT).show();
+        }
+
+    }
 
     public void stockResult(Stock stock) {
         if (stock == null){
@@ -207,6 +210,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    public void onClick(final View view){
+
+    }
+
 
     public void saveStocksIntoJson() throws IOException, JSONException {
         FileOutputStream fos = getApplicationContext().openFileOutput("SavedStocks.json", Context.MODE_PRIVATE);
@@ -220,9 +227,6 @@ public class MainActivity extends AppCompatActivity {
         String jsonText = jsonArray.toString();
         fos.write(jsonText.getBytes());
         fos.close();
-
-
-
     }
 
     public void doWrite(Context ma){
@@ -257,6 +261,16 @@ public class MainActivity extends AppCompatActivity {
         catch (IOException e) {
         }
     }
+
+    public void networkErrorDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("Internet Error");
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         MenuInflater inf = getMenuInflater();
@@ -302,7 +316,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void clearStockList(){
         stockArrayList.clear();
-        stockListAdapter.notifyDataSetChanged();
+//        stockListAdapter.notifyDataSetChanged();
+    }
+
+    public void deleteFromList(int stockPos){
+        String symbol = stockArrayList.get(stockPos).getStockSymbol();
+        stockHashSet.remove(symbol);
+        stockArrayList.remove(stockPos);
+        updateList();
     }
 
     public void addStockToArrayList(Stock stock) {

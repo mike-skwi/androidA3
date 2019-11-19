@@ -77,14 +77,11 @@ public class StockDownloaderAsyncTask extends AsyncTask<String, Void, String> {
 //            mainActivity.stockResult(dataList.get(0));
                 if (!mainActivity.stockArrayList.contains(dataList.get(0))){
 //                    mainActivity.updateStockArrayList(dataList.get(0));
-                    try {
-                        mainActivity.addStockToArrayList(dataList.get(0));
-                        mainActivity.saveStocksIntoJson();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+//                    try {
+//                        mainActivity.addStockToArrayList(dataList.get(0));
+//                        mainActivity.saveStocksIntoJson();
+
+                        mainActivity.updateStockArrayList(dataList.get(0));
                 }
                 else{
                     //TODO toast saying duplicated stock??
